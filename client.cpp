@@ -14,5 +14,23 @@ int main(int argc, char * argv[])
         return 1;
     }
 
+    const char *ip = argv[1];
+    int port = atoi(argv[2]);
+
+    int sockfd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+    if(sockfd < 0)
+    {
+        std::cerr << "socket() error" << std::endl;
+        return -1;
+    }
+    sockaddr_in serverAddr;
+    socklen_t   serverAddrLen = sizeof(sockaddr_in);
+    bzero(&serverAddr, serverAddrLen);
+    serverAddr.sin_family = AF_INET;
+    serverAddr.sin_addr.s_addr = inet_addr(ip);
+    serverAddr.sin_port = htons(port);
+
+    ;
+
     return 0;
 }
