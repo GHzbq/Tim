@@ -1,6 +1,7 @@
 #include <iostream>
 #include <stdlib.h>
 #include <string.h>
+#include <string>
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/socket.h>
@@ -75,10 +76,62 @@ int main(int argc, char * argv[])
 
     clientData* client = new clientData[FD_LIMIT];
     pollfd fds[USER_LIMIT+1];
+    int userCount = 0;
+    for(int i = 1; i <= USER_LIMIT; ++i)
+    {
+        fds[i].fd = -1;
+        fds[i].events = 0;
+    }
+    fds[0].fd = listenSock;
+    fds[0].events = POLLIN | POLLERR;
+    fds[0].revents = 0;
 
     while(1)
     {
-        ;
+        ret = poll(fds, userCount+1, -1);
+        if(ret < 0)
+        {
+            ;
+        }
+
+        for(int i = 0; i < userCount+1; ++i)
+        {
+            if((fds[i].fd == listenSock) && (fds[i].revents & POLLIN))
+            {
+                // 有新连接
+                sockaddr_in clientAddr;
+                socklen_t clientAddrLen = sizeof(sockaddr_in);
+                bzero(&clientAddr, clientAddrLen);
+                int clientSock = accept(listenSock, (sockaddr*)&clientAddr, &clientAddrLen);
+                if(clientSock < 0)
+                {
+                    // err
+                    LOG(util::ERROR) << "accept() error" << std::endl;
+                    continue;
+                }
+
+                if(userCount >= USER_LIMIT)
+                {
+                    // 连接过多
+                    const std::string info = "too many users";
+                    std::cout << info << std::endl;
+                    ret = send(clientSock, info.c_str(), info.size(), 0);
+                    if(ret < 0 || (size_t)ret != info.size())
+                    {
+                        LOG(util::ERROR) << "send() error" << std::endl;
+                    }
+                    close(clientSock);
+                    continue;
+                }
+
+                // 新连接：
+                ++userCount;
+                client[clientSock].address = clientAddr;
+                setNonBlocking(clientSock);
+                fds[userCount].fd = clientSock;
+
+            }
+        }
     }
 
     close(listenSock);
