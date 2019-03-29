@@ -1,10 +1,10 @@
 all: client server
 
-client: client.cpp
-	g++ client.cpp -o $^
+client: client.cpp util.hpp
+	g++ client.cpp -o $@ -std=c++11
 
-server: server.cpp
-	g++ server.cpp -o $^
+server: server.cpp util.hpp
+	g++ server.cpp -o $@ -std=c++11;
 
 
 .PHONY: clean

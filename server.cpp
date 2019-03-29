@@ -91,7 +91,8 @@ int main(int argc, char * argv[])
         ret = poll(fds, userCount+1, -1);
         if(ret < 0)
         {
-            ;
+            LOG(util::ERROR) << "poll() error" << std::endl;
+            break;
         }
 
         for(int i = 0; i < userCount+1; ++i)
@@ -129,11 +130,90 @@ int main(int argc, char * argv[])
                 client[clientSock].address = clientAddr;
                 setNonBlocking(clientSock);
                 fds[userCount].fd = clientSock;
-
+                fds[userCount].events = POLLIN | POLLRDHUP | POLLERR;
+                fds[userCount].revents = 0;
             }
-        }
+            else if(fds[i].revents & POLLERR)
+            {
+                std::cout << "get an error from " << fds[i].fd << std::endl;
+                char errors[100] = {0};
+                socklen_t len = sizeof(errors)/sizeof(errors[0]);
+                memset(errors, 0x00, len);
+                if(getsockopt(fds[i].fd, SOL_SOCKET, SO_ERROR, errors, &len) < 0)
+                {
+                    std::cout << "get socket option failed" << std::endl;
+                }
+                continue;
+            }
+            else if(fds[i].revents & POLLRDHUP)
+            {
+                // 客户端关闭连接，服务器也关闭连接，并且客户数量-1
+                client[fds[i].fd] = client[fds[userCount].fd];
+                close(fds[i].fd);
+                fds[i] = fds[userCount];
+                --i;
+                --userCount;
+                std::cout << "a client left" << std::endl;
+            }
+            else if(fds[i].revents & POLLIN)
+            {
+                int& clientSock = fds[i].fd;
+                memset(client[clientSock].buf, 0x00, BUFF_SIZE);
+                ret = recv(clientSock, client[clientSock].buf, BUFF_SIZE-1, 0);
+                if(ret < 0)
+                {
+                    if(errno != EAGAIN)
+                    {
+                        close(clientSock);
+                        client[fds[i].fd] = client[fds[userCount].fd];
+                        fds[i] = fds[userCount];
+                        --i;
+                        --userCount;
+                    }
+                }
+                else if(ret == 0)
+                {
+                }
+                else 
+                {
+                    client[clientSock].buf[ret] = 0;
+                    std::cout << "get " << ret << " bytes of client data [" 
+                        << client[clientSock].buf << "] from " << clientSock << std::endl;
+                    for(int j = 1; j <= userCount; ++j)
+                    {
+                        if(fds[i].fd == clientSock)
+                        {
+                            continue;
+                        }
+
+                        fds[j].events |= ~POLLIN;
+                        fds[j].events |= POLLOUT;
+                        client[fds[j].fd].writeBuf = client[clientSock].buf;
+                    }
+                }
+            }
+            else if(fds[i].events & POLLOUT)
+            {
+                int& clientSock = fds[i].fd;
+                if(!client[clientSock].writeBuf)
+                {
+                    continue;
+                }
+                int len = strlen(client[clientSock].writeBuf);
+                ret = send(clientSock, client[clientSock].writeBuf, len, 0);
+                if(ret < 0 || ret != len)
+                {
+                    LOG(util::ERROR) << "send() error" << std::endl;
+                    continue;
+                }
+                client[clientSock].writeBuf = NULL;
+                fds[i].events |= POLLOUT;
+                fds[i].events |= POLLIN;
+            }
+        }// end of for(int i)
     }
 
+    delete[] client;
     close(listenSock);
 
     return 0;
