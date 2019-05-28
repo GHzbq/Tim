@@ -92,7 +92,10 @@ namespace chatserver
         }
 
     private:
-        static uint32_t UserRegister(const std::string& nickName, const std::string& passWord);
+        static uint32_t UserRegister(const std::string& nickName, const std::string& passWord)
+        {
+            return um.Insert(nickName, passWord);
+        }
 
         static uint32_t UserLogin(const uint32_t id, const std::string& password);
 
@@ -113,9 +116,9 @@ namespace chatserver
             customprotocol::Request req;
             customprotocol::util::RecvRequest(sock, &req);
 
-            std::cout << "[DEBUG]" << " req._method = " << req._method << std::endl;
-            std::cout << "[DEBUG]" << " req._contentLength = " << req._contentLength << std::endl;
-            std::cout << "[DEBUG]" << " req = " << req._body << std::endl;
+            // std::cout << "[DEBUG]" << " req._method = " << req._method << std::endl;
+            // std::cout << "[DEBUG]" << " req._contentLength = " << req._contentLength << std::endl;
+            // std::cout << "[DEBUG]" << " req = " << req._body << std::endl;
 
             Json::Value value;
             customprotocol::util::DeSerialize(req._body, value);
@@ -126,8 +129,8 @@ namespace chatserver
                 std::string nickName = value["nickname"].asString();
                 std::string passWord = value["password"].asString();
 
-                uint32_t id = 10001; // sp->UserRegister(nickName, passWord);
-                std::cout << "[DEBUG]" << "id = " << id << std::endl;
+                uint32_t id = sp->UserRegister(nickName, passWord);
+                // std::cout << "[DEBUG]" << "id = " << id << std::endl;
                 int32_t ret = ::send(sock, &id, sizeof(uint32_t), 0);
                 if(ret < 0)
                 {
@@ -139,7 +142,7 @@ namespace chatserver
                 uint32_t id = value["id"].asUInt();
                 std::string passWord = value["password"].asString();
 
-                uint32_t result = 10001; // sp->UserLogin(id, passWord);
+                uint32_t result = sp->UserLogin(id, passWord);
                 ::send(sock, &result, sizeof(uint32_t), 0);
             }
             else
