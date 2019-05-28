@@ -20,14 +20,14 @@ namespace Util
 
     enum ERRORLEVEL
     {
-        NOTE = 0,
-        WARNING,
-        ERROR,
+        NOTICE = 0, // 需要注意的信息
+        WARNING,    // 警告
+        ERROR,      // 错误
     };
 
 
     static const char* ErrorLevelInfo[] = {
-        "NOTE",
+        "NOTICE",
         "WARNING",
         "ERROR"
     };
