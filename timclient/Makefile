@@ -7,7 +7,7 @@ client=chatclient
 all: $(client)
 	
 $(client): ./chatclientsrc/chatclient.cc
-	$(cc) -o $@ $^  -lpthread -std=c++11
+	$(cc) -o $@ $^  -lpthread -std=c++11 -ljsoncpp
 
 .PHONY: clean
 
