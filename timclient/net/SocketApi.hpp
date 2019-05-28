@@ -15,6 +15,7 @@
 #include <netinet/in.h>
 
 #include "../base/LogUtil.hpp"
+#include "./CustomProtocol.hpp"
 
 namespace net
 {
@@ -131,6 +132,18 @@ namespace net
             }
 
             return true;
+        }
+
+        static void Send(int sock, customprotocol::Request& req)
+        {
+            std::string &method = req._method;
+            std::string &contentLength = req._contentLength;
+            std::string &nullString = req._nullString; 
+            std::string &body = req._body;
+            ::send(sock, method.c_str(), method.size(), 0);
+            ::send(sock, contentLength.c_str(), contentLength.size(), 0);
+            ::send(sock, nullString.c_str(), nullString.size(), 0);
+            ::send(sock, body.c_str(), body.size(), 0);
         }
     };
 }
