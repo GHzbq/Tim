@@ -13,7 +13,7 @@ namespace usermanger
     struct User
     {
     public:
-        uint32_t     _userID;
+        uint32_t    _userID;
         std::string _nickName;
         std::string _passWord;
     public:
@@ -42,11 +42,12 @@ namespace usermanger
         std::unordered_map<uint32_t, User> _um_users;
         std::unordered_map<uint32_t, struct sockaddr_in> _um_online_users;
     public:
-        UserManger(uint32_t assign_id)
-            : _assign_id(assign_id)
+        UserManger()
+            : _assign_id(10000)
         {}
     };
 
+#if 0
     class ServerManger
     {
     private:
@@ -91,4 +92,5 @@ namespace usermanger
             return true;
         }
     };
+#endif
 }
