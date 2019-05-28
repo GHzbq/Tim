@@ -9,6 +9,8 @@
 #include <pthread.h>
 
 #include "../net/SocketApi.hpp"
+#include "../net/CustomProtocol.hpp"
+#include "./UserManger.hpp"
 
 namespace chatserver
 {
@@ -43,6 +45,8 @@ namespace chatserver
          * */
         int32_t _message_sock;
         uint16_t _message_port;
+
+        usermanger::UserManger um;
 
     public:
         ChatServer(uint16_t listen_port = 30001, uint16_t message_port = 30002)
@@ -88,6 +92,10 @@ namespace chatserver
         }
 
     private:
+        static uint32_t UserRegister(const std::string& nickName, const std::string& passWord);
+
+        static uint32_t UserLogin(const uint32_t id, const std::string& password);
+
         static void* UserManger(void*)
         {
             return nullptr;
@@ -99,10 +107,47 @@ namespace chatserver
             int sock = p->_sock;
             ChatServer* sp = p->_sp;
             delete p;
+
             pthread_detach(pthread_self());
 
-            close(sock);
+            customprotocol::Request req;
+            customprotocol::util::RecvRequest(sock, &req);
 
+            std::cout << "[DEBUG]" << " req._method = " << req._method << std::endl;
+            std::cout << "[DEBUG]" << " req._contentLength = " << req._contentLength << std::endl;
+            std::cout << "[DEBUG]" << " req = " << req._body << std::endl;
+
+            Json::Value value;
+            customprotocol::util::DeSerialize(req._body, value);
+
+            // REGISTER
+            if(req._method == "REGISTER")
+            {
+                std::string nickName = value["nickname"].asString();
+                std::string passWord = value["password"].asString();
+
+                uint32_t id = 10001; // sp->UserRegister(nickName, passWord);
+                std::cout << "[DEBUG]" << "id = " << id << std::endl;
+                int32_t ret = ::send(sock, &id, sizeof(uint32_t), 0);
+                if(ret < 0)
+                {
+                    std::cerr <<  __FILE__ << ":" << __LINE__ << "::send() error." << std::endl;
+                }
+            }
+            else if(req._method == "LOGIN")
+            {
+                uint32_t id = value["id"].asUInt();
+                std::string passWord = value["password"].asString();
+
+                uint32_t result = 10001; // sp->UserLogin(id, passWord);
+                ::send(sock, &result, sizeof(uint32_t), 0);
+            }
+            else
+            {
+                // LOGOUT TODO
+            }
+
+            close(sock);
             return nullptr;
         }
     };
