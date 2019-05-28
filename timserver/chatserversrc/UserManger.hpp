@@ -39,12 +39,37 @@ namespace usermanger
     {
     private:
         uint32_t _assign_id;
-        std::unordered_map<uint32_t, User> _um_users;
+        std::unordered_map<uint32_t, User> _um_users; // 临界资源
         std::unordered_map<uint32_t, struct sockaddr_in> _um_online_users;
+
+        pthread_mutex_t _mutex;
     public:
         UserManger()
             : _assign_id(10000)
-        {}
+        {
+            pthread_mutex_init(&_mutex, nullptr);
+        }
+
+        ~UserManger()
+        {
+            pthread_mutex_destroy(&_mutex);
+        }
+
+        uint32_t Insert(const std::string& nickName, const std::string& passWord)
+        {
+            User u(nickName, passWord);
+        }
+
+    private:
+        void Lock()
+        {
+            pthread_mutex_lock(&_mutex);
+        }
+
+        void UnLock()
+        {
+            pthread_mutex_unlock(&_mutex);
+        }
     };
 
 #if 0
